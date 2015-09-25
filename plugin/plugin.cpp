@@ -5,6 +5,7 @@
 #include "plugin_foundation/matrix4x4.h"
 #include "plugin_foundation/vector3.h"
 #include "plugin_foundation/random.h"
+#include "plugin_foundation/stream.h"
 
 #include <string.h>
 
@@ -48,6 +49,10 @@ namespace {
 	typedef uint16_t Index;
 
 	struct Object {
+		Unit *unit;
+		uint32_t node_name_id;
+		void *material;
+
 		uint32_t vbuffer;
 		uint32_t ibuffer;
 		uint32_t vdecl;
@@ -55,7 +60,7 @@ namespace {
 		Array<Vertex> *vertices;
 		Array<uint16_t> *indices;
 	};
-	Object *_object;
+	Object *_object = nullptr;
 
 	Vertex vertex(float x, float y, float z)
 	{
@@ -88,7 +93,7 @@ namespace {
 	{
 		Random r(seed);
 
-		int n = 300;
+		int n = 1500;
 		Block &b = *(Block *)_allocator.allocate(sizeof(Block) + n * sizeof(Building));
 		b.xmin = xmin;
 		b.xmax = xmax;
@@ -100,16 +105,16 @@ namespace {
 
 		for (int i=0; i<n; ++i) {
 			Building &bu = b.buildings[i];
-			bu.xmin = i*2.0f;
+			bu.xmin = 1.0f+i*2.0f;
 			bu.ymin = 0.0f;
-			while (bu.xmin > b.xmax)
+			while (bu.xmin+2 > b.xmax)
 			{
-				bu.xmin -= b.xmax;
+				bu.xmin -= b.xmax - 3;
 				bu.ymin += 3;
 			}
 			bu.xmax = bu.xmin + 1;
 			bu.ymax = bu.ymin + 2;
-			bu.height = r(5.0f, 100.0f);
+			bu.height = r(0.0f, 6.0f);
 		}
 		return &b;
 	}
@@ -125,11 +130,14 @@ namespace {
 		}
 	}
 
-	int make_city(struct lua_State *L)
+	void make_city(Unit *unit, uint32_t node_name_id, void *material)
 	{
-		auto unit = _lua->getunit(L, 1);
-		auto node_name = _lua->tolstring(L, 2, NULL);
-		auto material = _lua->tolstring(L, 3, NULL);
+		_object = MAKE_NEW(_allocator, Object);
+		Object &o = *_object;
+
+		o.unit = unit;
+		o.node_name_id = node_name_id;
+		o.material = material;
 
 		const RB_VertexChannel vchannels[] = {
 			{ _render_buffer->format(RB_ComponentType::RB_FLOAT_COMPONENT, true, false, 32, 32, 32, 0), RB_VertexSemantic::RB_POSITION_SEMANTIC, 0, 0, false },
@@ -140,14 +148,12 @@ namespace {
 		RB_VertexDescription vdesc;
 		vdesc.n_channels = n_channels;
 		uint32_t stride = 0;
-		for (uint32_t i=0; i!=n_channels; ++i) {
+		for (uint32_t i = 0; i != n_channels; ++i) {
 			stride += _render_buffer->num_bits(vchannels[i].format) / 8;
 			uint32_t n_components = _render_buffer->num_components(vchannels[i].format);
 			vdesc.channels[i] = vchannels[i];
 		}
 
-		_object = MAKE_NEW(_allocator, Object);
-		Object &o = *_object;
 		o.vdecl = _render_buffer->create_description(RB_Description::RB_VERTEX_DESCRIPTION, &vdesc);
 
 		RB_VertexBufferView vb_view;
@@ -165,7 +171,6 @@ namespace {
 		o.vbuffer = _render_buffer->create_buffer(o.vertices->size() * vb_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_VERTEX_BUFFER_VIEW, &vb_view, o.vertices->begin());
 		o.ibuffer = _render_buffer->create_buffer(o.indices->size() * ib_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_INDEX_BUFFER_VIEW, &ib_view, o.indices->begin());
 
-		uint32_t node_name_id = IdString64(node_name).id() >> 32;
 		o.mesh = _mesh_api->create(unit, node_name_id, MO_Flags::MO_VIEWPORT_VISIBLE_FLAG | MO_Flags::MO_SHADOW_CASTER_FLAG);
 
 		float bv_min[] = { block->xmin, block->ymin, -1.0f };
@@ -179,11 +184,8 @@ namespace {
 		_mesh_api->add_resource(o.mesh, _render_buffer->lookup_resource(o.vdecl));
 		_mesh_api->add_resource(o.mesh, _render_buffer->lookup_resource(o.ibuffer));
 
-		void *materials[] = { _resource_api->get("material", material) };
+		void *materials[] = { material };
 		_mesh_api->set_materials(o.mesh, 1, materials);
-
-		_lua->pushinteger(L, 0);
-		return 1;
 	}
 
 	void destroy_city()
@@ -212,16 +214,32 @@ namespace {
 		_unit = (UnitApi*)get_engine_api(UNIT_API_ID);
 		_scene_graph = (SceneGraphApi*)get_engine_api(SCENE_GRAPH_API_ID);
 		_allocator_api = (AllocatorApi*)get_engine_api(ALLOCATOR_API_ID);
+
+		_allocator_object = _allocator_api->make_plugin_allocator("City");
+		_allocator = ApiAllocator(_allocator_api, _allocator_object);
+
+		_lua = (LuaApi*)get_engine_api(LUA_API_ID);
 	}
 
 	void setup_game(GetApiFunction get_engine_api)
 	{
 		init_api(get_engine_api);
-		_allocator_object = _allocator_api->make_plugin_allocator("City");
-		_allocator = ApiAllocator(_allocator_api, _allocator_object);
 
-		_lua = (LuaApi*)get_engine_api(LUA_API_ID);
-		_lua->add_module_function("City", "make_city", make_city);
+		_lua->add_module_function("City", "make_city", [](lua_State *L)
+		{
+			auto unit = _lua->getunit(L, 1);
+			auto node_name = _lua->tolstring(L, 2, NULL);
+			auto material_name = _lua->tolstring(L, 3, NULL);
+
+			uint32_t node_name_id = IdString64(node_name).id() >> 32;
+			auto material = _resource_api->get("material", material_name);
+
+			make_city(unit, node_name_id, material);
+
+			_lua->pushinteger(L, 0);
+			return 1;
+		});
+
 		// _lua->add_module_function("RenderPlugin", "destroy_logo", destroy_logo);
 
 		//_objects = MAKE_NEW(_allocator, Objects, _allocator);
@@ -251,14 +269,35 @@ namespace {
 
 	void* start_reload(GetApiFunction get_engine_api)
 	{
+		void *state = _allocator.allocate(256);
+		char *s = (char *)state;
+		if (_object)
+		{
+			stream::pack<int>(s, 1);
+			stream::pack(s, _object->unit);
+			stream::pack(s, _object->node_name_id);
+			stream::pack(s, _object->material);
+		} else
+			stream::pack<int>(s, 0);
+
 		destroy_city();
-		return nullptr;
+
+		return state;
 	}
 
 	void finish_reload(GetApiFunction get_engine_api, void *state)
 	{
 		init_api(get_engine_api);
-		return;
+
+		char *s = (char *)state;
+		if (stream::unpack<int>(s))
+		{
+			auto unit = stream::unpack<Unit *>(s);
+			auto node_name_id = stream::unpack<uint32_t>(s);
+			auto material = stream::unpack<void *>(s);
+
+			make_city(unit, node_name_id, material);
+		}
 	}
 }
 
