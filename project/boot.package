@@ -1,0 +1,9 @@
+lua = ["boot"]
+material = ["core/performance_hud/gui", "city"]
+physics_properties = ["global"]
+render_config = ["core/stingray_renderer/renderer"]
+shading_environment = ["core/stingray_renderer/environments/midday/midday"]
+unit = [
+	"core/units/camera"
+	"core/editor_slave/units/skydome/skydome"
+]
