@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 
-include_directories(C:\\Work\\code\\runtime\\plugins)
+include_directories(C:\\Work\\stingray-engine\\runtime\\plugins)
 
 project(city_plugin)
 add_library(city_plugin SHARED plugin.cpp)

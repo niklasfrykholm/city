@@ -105,8 +105,8 @@ namespace {
 
 		for (int i=0; i<n; ++i) {
 			Building &bu = b.buildings[i];
-			bu.xmin = 1.0f+i*2.0f;
-			bu.ymin = 0.0f;
+			bu.xmin = 1.0f+i*2.0f + r(-0.1f, 0.1f);
+			bu.ymin = 0.0f + r(-0.1f, 0.1f);
 			while (bu.xmin+2 > b.xmax)
 			{
 				bu.xmin -= b.xmax - 3;
@@ -114,7 +114,7 @@ namespace {
 			}
 			bu.xmax = bu.xmin + 1;
 			bu.ymax = bu.ymin + 2;
-			bu.height = r(0.0f, 6.0f);
+			bu.height = r(1.0f, 5.0f);
 		}
 		return &b;
 	}
