@@ -46,7 +46,7 @@ namespace {
 		Vector3 normal;
 	};
 
-	typedef uint16_t Index;
+	typedef uint32_t Index;
 
 	struct City {
 		Unit *unit;
@@ -58,7 +58,7 @@ namespace {
 		uint32_t vdecl;
 		uint32_t mesh;
 		Array<Vertex> *vertices;
-		Array<uint16_t> *indices;
+		Array<uint32_t> *indices;
 	};
 	City *_city = nullptr;
 
@@ -70,8 +70,6 @@ namespace {
 
 	void draw_aabb(Array<Vertex> &vb, Array<Index> &ib, const Vector3 &min, const Vector3 &max)
 	{
-		
-
 		auto add_face = [&](const Vector3 &n) {
 			auto c = (min + max) / 2.0f + n * (max - min) / 2.0f;
 			auto e1 = n.x ? vector3(0, 1, 0) : vector3(1, 0, 0);
@@ -120,18 +118,20 @@ namespace {
 			AABB item = queue.back();
 			queue.pop_back();
 
-			if ((item.xmax - item.xmin) < 50 || (item.ymax - item.ymin) < 50) {
+			if ((item.xmax - item.xmin) < 20 || (item.ymax - item.ymin) < 20) {
 				lots.push_back(item);
 			} else {
 				if ((item.xmax - item.xmin) > (item.ymax - item.ymin)) {
 					// Split x
-					float x = r(item.xmin + 25.0f, item.xmax - 25.0f);
 					float rw = (item.xmax - item.xmin) / 10.0f / 2.0f;
+					if (rw > 25.0f) rw = 25.0f;
+					float x = r(item.xmin + rw * 2, item.xmax - rw * 2);
 					queue.push_back(aabb(item.xmin, x - rw, item.ymin, item.ymax));
 					queue.push_back(aabb(x + rw, item.xmax, item.ymin, item.ymax));
 				} else {
-					float y = r(item.ymin + 25.0f, item.ymax - 25.0f);
 					float rw = (item.ymax - item.ymin) / 10.0f / 2.0f;
+					if (rw > 25.0f) rw = 25.0f;
+					float y = r(item.ymin + rw * 2, item.ymax - rw * 2);
 					queue.push_back(aabb(item.xmin, item.xmax, item.ymin, y - rw));
 					queue.push_back(aabb(item.xmin, item.xmax, y + rw, item.ymax));
 				}
@@ -156,7 +156,7 @@ namespace {
 			bu.xmax = lot.xmax;
 			bu.ymin = lot.ymin;
 			bu.ymax = lot.ymax;
-			int floors = r(1, 10);
+			int floors = r(1, 1);
 			bu.height = floors * 3.50f;
 		}
 		return &b;
@@ -204,9 +204,9 @@ namespace {
 		vb_view.stride = stride;
 
 		RB_IndexBufferView ib_view;
-		ib_view.stride = 2;
+		ib_view.stride = 4;
 
-		o.indices = MAKE_NEW(_allocator, Array<uint16_t>, _allocator);
+		o.indices = MAKE_NEW(_allocator, Array<uint32_t>, _allocator);
 		o.vertices = MAKE_NEW(_allocator, Array<Vertex>, _allocator);
 
 		Block *block = make_block(0, -1000.0f, 1000.0f, -1000.0f, 1000.0f);

@@ -9,11 +9,12 @@ local Keyboard = stingray.Keyboard
 local Matrix4x4 = stingray.Matrix4x4
 local Vector3 = stingray.Vector3
 local Quaternion = stingray.Quaternion
+local Level = stingray.Level
 
 self = {}
 
 camera = {
-	free_flight_speed = 20.0,
+	free_flight_speed = 200.0,
 	rotation_speed = 1.0,
 
 	init = function(self, world, camera_unit)
@@ -65,9 +66,15 @@ function init()
 
 	self.world = Application.new_world()
 	self.viewport = Application.create_viewport(self.world, "default")
-	self.shading_environment = World.create_shading_environment(self.world, "core/stingray_renderer/environments/midday/midday")
+	self.shading_environment = World.create_shading_environment(self.world, "midday")
+
+	local level = World.load_level(self.world, "empty")
+	Level.spawn_background(level)
+	Level.trigger_level_loaded(level)
+	if Level.has_data(level, "shading_environment") then
+		World.set_shading_environment(self.world, self.shading_environment, Level.get_data(level, "shading_environment"))
+	end
 	self.camera_unit = World.spawn_unit(self.world, "core/units/camera")
-	self.sky = World.spawn_unit(self.world, "core/editor_slave/units/skydome/skydome")
 	self.city_unit = World.spawn_unit(self.world, "core/units/camera")
 	City.make_city(self.city_unit, "rp_root", "city")
 
