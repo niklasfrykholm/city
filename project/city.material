@@ -5,12 +5,12 @@ shader = {
 	constants = [
 		{
 			connector_id = "aca690cb-6305-4a2f-bf3d-69183a493db3"
-			id = "a767247a-5f45-4e5d-9943-be4bf59181c9"
+			id = "4efd02aa-8638-4d63-a3f1-87942be1c81a"
 			instance_id = "abbaabba-abba-abba-abba-abbaabbaabba"
 			value = [
 				0.5
-				0
-				0
+				0.5
+				0.5
 			]
 		}
 	]
