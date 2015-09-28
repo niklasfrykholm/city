@@ -209,7 +209,7 @@ namespace {
 		o.indices = MAKE_NEW(_allocator, Array<uint32_t>, _allocator);
 		o.vertices = MAKE_NEW(_allocator, Array<Vertex>, _allocator);
 
-		Block *block = make_block(0, -1000.0f, 1000.0f, -1000.0f, 1000.0f);
+		Block *block = make_block(0, -2000.0f, 2000.0f, -2000.0f, 2000.0f);
 		render_block(*block, *o.vertices, *o.indices);
 		
 		o.vbuffer = _render_buffer->create_buffer(o.vertices->size() * vb_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_VERTEX_BUFFER_VIEW, &vb_view, o.vertices->begin());
