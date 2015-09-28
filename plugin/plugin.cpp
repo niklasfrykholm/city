@@ -62,31 +62,45 @@ namespace {
 	};
 	City *_city = nullptr;
 
-	Vertex vertex(float x, float y, float z)
+	Vertex vertex(const Vector3 &p, const Vector3 &n)
 	{
-		Vertex v;
-		v.position = vector3(x, y, z);
-		v.normal = vector3(0, 0, 1);
+		Vertex v = { p, n };
 		return v;
 	}
 
 	void draw_aabb(Array<Vertex> &vb, Array<Index> &ib, const Vector3 &min, const Vector3 &max)
 	{
-		auto v0 = vb.size();
+		
 
-		vb.push_back(vertex(min.x, min.y, min.z));
-		vb.push_back(vertex(min.x, min.y, max.z));
-		vb.push_back(vertex(min.x, max.y, min.z));
-		vb.push_back(vertex(min.x, max.y, max.z));
-		vb.push_back(vertex(max.x, min.y, min.z));
-		vb.push_back(vertex(max.x, min.y, max.z));
-		vb.push_back(vertex(max.x, max.y, min.z));
-		vb.push_back(vertex(max.x, max.y, max.z));
+		auto add_face = [&](const Vector3 &n) {
+			auto c = (min + max) / 2.0f + n * (max - min) / 2.0f;
+			auto e1 = n.x ? vector3(0, 1, 0) : vector3(1, 0, 0);
+			auto e2 = cross(n, e1);
+			auto o1 = e1 * (max - min) / 2.0f;
+			auto o2 = e2 * (max - min) / 2.0f;
 
-		Index ids[36] = {0,1,2, 1,3,2, 1,5,3, 5,7,3, 5,4,7, 4,6,7, 4,0,6, 0,2,6, 2,3,6, 3,7,6, 4,5,0, 5,1,0};
+			auto v0 = vb.size();
+			vb.push_back(vertex(c - o1 - o2, n));
+			vb.push_back(vertex(c - o1 + o2, n));
+			vb.push_back(vertex(c + o1 + o2, n));
+			vb.push_back(vertex(c + o1 - o2, n));
 
-		for (auto id : ids)
-			ib.push_back(v0 + id);
+			ib.push_back(v0 + 2);
+			ib.push_back(v0 + 1);
+			ib.push_back(v0 + 0);
+			ib.push_back(v0 + 0);
+			ib.push_back(v0 + 3);
+			ib.push_back(v0 + 2);
+		};
+
+		add_face(vector3(-1, 0, 0));
+		add_face(vector3(+1, 0, 0));
+		add_face(vector3(0, -1, 0));
+		add_face(vector3(0, +1, 0));
+		add_face(vector3(0, 0, -1));
+		add_face(vector3(0, 0, +1));
+	}
+
 	}
 
 	Block *make_block(unsigned seed, float xmin, float xmax, float ymin, float ymax)
