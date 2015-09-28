@@ -14,7 +14,6 @@ local Level = stingray.Level
 self = {}
 
 camera = {
-	free_flight_speed = 200.0,
 	rotation_speed = 1.0,
 
 	init = function(self, world, camera_unit)
@@ -54,8 +53,10 @@ camera = {
 		return qres
 	end,
 	_compute_translation = function(self, p, q, input, dt)
+		local speed = p.z * 5
+		if speed < 10 then speed = 10 end
 		local pose = Matrix4x4.from_quaternion(q)
-		local local_move = input.move * dt * self.free_flight_speed
+		local local_move = input.move * dt * speed
 		local move = Matrix4x4.transform(pose, local_move)
 		return p + move
 	end
