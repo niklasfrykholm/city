@@ -101,13 +101,45 @@ namespace {
 		add_face(vector3(0, 0, +1));
 	}
 
+	struct AABB { float xmin, xmax, ymin, ymax; };
+	AABB aabb(float xmin, float xmax, float ymin, float ymax)
+	{
+		AABB x = { xmin, xmax, ymin, ymax };
+		return x;
 	}
 
 	Block *make_block(unsigned seed, float xmin, float xmax, float ymin, float ymax)
 	{
 		Random r(seed);
 
-		int n = 1500;
+		Array<AABB> lots(_allocator);
+		Array<AABB> queue(_allocator);
+
+		queue.push_back(aabb(xmin, xmax, ymin, ymax));
+		while (queue.size() > 0) {
+			AABB item = queue.back();
+			queue.pop_back();
+
+			if ((item.xmax - item.xmin) < 50 || (item.ymax - item.ymin) < 50) {
+				lots.push_back(item);
+			} else {
+				if ((item.xmax - item.xmin) > (item.ymax - item.ymin)) {
+					// Split x
+					float x = r(item.xmin + 25.0f, item.xmax - 25.0f);
+					float rw = (item.xmax - item.xmin) / 10.0f / 2.0f;
+					queue.push_back(aabb(item.xmin, x - rw, item.ymin, item.ymax));
+					queue.push_back(aabb(x + rw, item.xmax, item.ymin, item.ymax));
+				} else {
+					float y = r(item.ymin + 25.0f, item.ymax - 25.0f);
+					float rw = (item.ymax - item.ymin) / 10.0f / 2.0f;
+					queue.push_back(aabb(item.xmin, item.xmax, item.ymin, y - rw));
+					queue.push_back(aabb(item.xmin, item.xmax, y + rw, item.ymax));
+				}
+			}
+		}
+
+
+		int n = lots.size();;
 		Block &b = *(Block *)_allocator.allocate(sizeof(Block) + n * sizeof(Building));
 		b.xmin = xmin;
 		b.xmax = xmax;
@@ -118,17 +150,14 @@ namespace {
 		b.buildings = (Building *)(&b+1);
 
 		for (int i=0; i<n; ++i) {
+			AABB lot = lots[i];
 			Building &bu = b.buildings[i];
-			bu.xmin = 1.0f+i*2.0f + r(-0.1f, 0.1f);
-			bu.ymin = 0.0f + r(-0.1f, 0.1f);
-			while (bu.xmin+2 > b.xmax)
-			{
-				bu.xmin -= b.xmax - 3;
-				bu.ymin += 3;
-			}
-			bu.xmax = bu.xmin + 1;
-			bu.ymax = bu.ymin + 2;
-			bu.height = r(1.0f, 5.0f);
+			bu.xmin = lot.xmin;
+			bu.xmax = lot.xmax;
+			bu.ymin = lot.ymin;
+			bu.ymax = lot.ymax;
+			int floors = r(1, 10);
+			bu.height = floors * 3.50f;
 		}
 		return &b;
 	}
