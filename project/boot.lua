@@ -78,6 +78,9 @@ function init()
 	self.city_unit = World.spawn_unit(self.world, "core/units/camera")
 	City.make_city(self.city_unit, "rp_root", "city")
 
+	local co = Unit.camera(self.camera_unit, "camera")
+	Camera.set_local_position(co, self.camera_unit, Vector3(0,0,2))
+
 	camera:init(self.world, self.camera_unit)
 end
 
