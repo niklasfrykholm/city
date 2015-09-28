@@ -90,6 +90,7 @@ function render()
 end
 
 function shutdown()
+	City.destroy_city()
 	Application.destroy_viewport(self.world, self.viewport)
 	World.destroy_shading_environment(self.world, self.shading_environment)
 	Application.release_world(self.world)

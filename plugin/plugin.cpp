@@ -48,7 +48,7 @@ namespace {
 
 	typedef uint16_t Index;
 
-	struct Object {
+	struct City {
 		Unit *unit;
 		uint32_t node_name_id;
 		void *material;
@@ -60,7 +60,7 @@ namespace {
 		Array<Vertex> *vertices;
 		Array<uint16_t> *indices;
 	};
-	Object *_object = nullptr;
+	City *_city = nullptr;
 
 	Vertex vertex(float x, float y, float z)
 	{
@@ -132,8 +132,9 @@ namespace {
 
 	void make_city(Unit *unit, uint32_t node_name_id, void *material)
 	{
-		_object = MAKE_NEW(_allocator, Object);
-		Object &o = *_object;
+		XENSURE(!_city);
+		_city = MAKE_NEW(_allocator, City);
+		City &o = *_city;
 
 		o.unit = unit;
 		o.node_name_id = node_name_id;
@@ -165,9 +166,9 @@ namespace {
 		o.indices = MAKE_NEW(_allocator, Array<uint16_t>, _allocator);
 		o.vertices = MAKE_NEW(_allocator, Array<Vertex>, _allocator);
 
-		Block *block = make_block(0, 0.0f, 100.0f, 0.0f, 100.0f);
+		Block *block = make_block(0, -1000.0f, 1000.0f, -1000.0f, 1000.0f);
 		render_block(*block, *o.vertices, *o.indices);
-
+		
 		o.vbuffer = _render_buffer->create_buffer(o.vertices->size() * vb_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_VERTEX_BUFFER_VIEW, &vb_view, o.vertices->begin());
 		o.ibuffer = _render_buffer->create_buffer(o.indices->size() * ib_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_INDEX_BUFFER_VIEW, &ib_view, o.indices->begin());
 
@@ -186,13 +187,19 @@ namespace {
 
 		void *materials[] = { material };
 		_mesh_api->set_materials(o.mesh, 1, materials);
+
+		_allocator.deallocate(block);
+		MAKE_DELETE(_allocator, o.indices);
+		MAKE_DELETE(_allocator, o.vertices);
+		o.indices = nullptr;
+		o.vertices = nullptr;
 	}
 
 	void destroy_city()
 	{
-		if (!_object) return;
+		if (!_city) return;
 
-		Object &o = *_object;
+		City &o = *_city;
 
 		_render_buffer->destroy_buffer(o.ibuffer);
 		_render_buffer->destroy_buffer(o.vbuffer);
@@ -201,8 +208,8 @@ namespace {
 
 		MAKE_DELETE(_allocator, o.vertices);
 		MAKE_DELETE(_allocator, o.indices);
-		MAKE_DELETE(_allocator, _object);
-		_object = nullptr;
+		MAKE_DELETE(_allocator, _city);
+		_city = nullptr;
 	}
 
 	void init_api(GetApiFunction get_engine_api)
@@ -239,31 +246,16 @@ namespace {
 			_lua->pushinteger(L, 0);
 			return 1;
 		});
-
-		// _lua->add_module_function("RenderPlugin", "destroy_logo", destroy_logo);
-
-		//_objects = MAKE_NEW(_allocator, Objects, _allocator);
-		//_free_objects = MAKE_NEW(_allocator, FreeObjects, _allocator);
+		_lua->add_module_function("City", "destroy_city", [](lua_State *L)
+		{
+			destroy_city();
+			return 0;
+		});
 	}
 
 	void shutdown_game()
 	{
-		/*
-		for (auto &o : *_objects) {
-			if (!o.used)
-				continue;
-
-			_render_buffer->destroy_buffer(o.ibuffer);
-			_render_buffer->destroy_buffer(o.vbuffer);
-			_render_buffer->destroy_description(o.vdecl);
-			_mesh_api->destroy(o.mesh);
-			MAKE_DELETE(_allocator, o.cloth);
-			MAKE_DELETE(_allocator, o.vertices);
-			MAKE_DELETE(_allocator, o.indices);
-		}
-		MAKE_DELETE(_allocator, _objects);
-		MAKE_DELETE(_allocator, _free_objects);
-		*/
+		destroy_city();
 		_allocator_api->destroy_plugin_allocator(_allocator_object);
 	}
 
@@ -271,14 +263,16 @@ namespace {
 	{
 		void *state = _allocator.allocate(256);
 		char *s = (char *)state;
-		if (_object)
+		if (_city)
 		{
 			stream::pack<int>(s, 1);
-			stream::pack(s, _object->unit);
-			stream::pack(s, _object->node_name_id);
-			stream::pack(s, _object->material);
+			stream::pack(s, _city->unit);
+			stream::pack(s, _city->node_name_id);
+			stream::pack(s, _city->material);
 		} else
 			stream::pack<int>(s, 0);
+
+		stream::pack(s, _allocator_object);
 
 		destroy_city();
 
@@ -288,6 +282,7 @@ namespace {
 	void finish_reload(GetApiFunction get_engine_api, void *state)
 	{
 		init_api(get_engine_api);
+		_allocator_api->destroy_plugin_allocator(_allocator_object);
 
 		char *s = (char *)state;
 		if (stream::unpack<int>(s))
@@ -295,9 +290,17 @@ namespace {
 			auto unit = stream::unpack<Unit *>(s);
 			auto node_name_id = stream::unpack<uint32_t>(s);
 			auto material = stream::unpack<void *>(s);
+			_allocator_object = stream::unpack<AllocatorObject *>(s);
+			_allocator = ApiAllocator(_allocator_api, _allocator_object);
 
 			make_city(unit, node_name_id, material);
 		}
+		else {
+			_allocator_object = stream::unpack<AllocatorObject *>(s);
+			_allocator = ApiAllocator(_allocator_api, _allocator_object);
+		}
+
+		_allocator.deallocate(state);
 	}
 }
 
