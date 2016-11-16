@@ -1,4 +1,4 @@
-#include "plugin_foundation/plugin_api.h"
+#include "engine_plugin_api/plugin_api.h"
 #include "plugin_foundation/id_string.h"
 #include "plugin_foundation/array.h"
 #include "plugin_foundation/allocator.h"
@@ -9,7 +9,7 @@
 
 #include <string.h>
 
-using namespace PLUGIN_NAMESPACE::stingray_plugin_foundation;
+using namespace stingray_plugin_foundation;
 
 namespace {
 
@@ -49,7 +49,7 @@ namespace {
 	typedef uint32_t Index;
 
 	struct City {
-		Unit *unit;
+		CApiUnit *unit;
 		uint32_t node_name_id;
 		void *material;
 
@@ -173,7 +173,7 @@ namespace {
 		}
 	}
 
-	void make_city(Unit *unit, uint32_t node_name_id, void *material)
+	void make_city(CApiUnit *unit, uint32_t node_name_id, void *material)
 	{
 		XENSURE(!_city);
 		_city = MAKE_NEW(_allocator, City);
@@ -211,11 +211,11 @@ namespace {
 
 		Block *block = make_block(0, -2000.0f, 2000.0f, -2000.0f, 2000.0f);
 		render_block(*block, *o.vertices, *o.indices);
-		
+
 		o.vbuffer = _render_buffer->create_buffer(o.vertices->size() * vb_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_VERTEX_BUFFER_VIEW, &vb_view, o.vertices->begin());
 		o.ibuffer = _render_buffer->create_buffer(o.indices->size() * ib_view.stride, RB_Validity::RB_VALIDITY_STATIC, RB_View::RB_INDEX_BUFFER_VIEW, &ib_view, o.indices->begin());
 
-		o.mesh = _mesh_api->create(unit, node_name_id, MO_Flags::MO_VIEWPORT_VISIBLE_FLAG | MO_Flags::MO_SHADOW_CASTER_FLAG);
+		o.mesh = _mesh_api->create(unit, node_name_id, node_name_id, MO_Flags::MO_VIEWPORT_VISIBLE_FLAG | MO_Flags::MO_SHADOW_CASTER_FLAG);
 
 		float bv_min[] = { block->xmin, block->ymin, -1.0f };
 		float bv_max[] = { block->xmax, block->ymax, block->max_height };
@@ -330,7 +330,7 @@ namespace {
 		char *s = (char *)state;
 		if (stream::unpack<int>(s))
 		{
-			auto unit = stream::unpack<Unit *>(s);
+			auto unit = stream::unpack<CApiUnit *>(s);
 			auto node_name_id = stream::unpack<uint32_t>(s);
 			auto material = stream::unpack<void *>(s);
 			_allocator_object = stream::unpack<AllocatorObject *>(s);

@@ -14,7 +14,7 @@ end
 
 FileUtils.mkdir_p("build")
 Dir.chdir("build") do
-	system %q{cmake -G "Visual Studio 11 2012 Win64" ..} or raise "cmake: #{$?}"
+	system %q{cmake -G "Visual Studio 14 2015 Win64" ..} or raise "cmake: #{$?}"
     patch_pdbaltpath("city_plugin.vcxproj")
-    system %Q{"#{ENV["VS120COMNTOOLS"]}/../../VC/vcvarsall.bat" x86_amd64 && MSBuild.exe city_plugin.sln /t:Build /p:Configuration=Debug /p:Platform=x64} or raise "msbuild: #{$?}"
+    system %Q{"#{ENV["VS140COMNTOOLS"]}/../../VC/vcvarsall.bat" x86_amd64 && MSBuild.exe city_plugin.sln /t:Build /p:Configuration=Debug /p:Platform=x64} or raise "msbuild: #{$?}"
 end

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 
-include_directories(C:\\Work\\stingray-engine\\runtime\\plugins)
+include_directories(C:\\Work\\stingray\\runtime\\sdk)
 
 project(city_plugin)
 add_library(city_plugin SHARED plugin.cpp)
@@ -13,5 +13,7 @@ set_target_properties(city_plugin PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_DEV dlls
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE dlls
 )
+
+add_definitions(-DWINDOWSPC)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBALTPATH:%_PDB%")
