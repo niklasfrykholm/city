@@ -16,22 +16,14 @@ set_target_properties(city_plugin PROPERTIES
 
 add_definitions(-DWINDOWSPC)
 
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.dll city_pluginw64_debug.dll.old
-	WORKING_DIRECTORY dlls
-	ERROR_QUIET
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/move-dll.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/move-dll.cmake
+	COPYONLY
 )
 
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.pdb city_pluginw64_debug.pdb.old
-	WORKING_DIRECTORY dlls
-	ERROR_QUIET
-)
-
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E remove city_pluginw64_debug.pdb
-	WORKING_DIRECTORY dlls
-	ERROR_QUIET
+add_custom_command(TARGET city_plugin PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/move-dll.cmake
 )
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBALTPATH:%_PDB%")
