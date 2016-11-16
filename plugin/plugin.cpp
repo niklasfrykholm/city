@@ -156,7 +156,7 @@ namespace {
 			bu.xmax = lot.xmax;
 			bu.ymin = lot.ymin;
 			bu.ymax = lot.ymax;
-			int floors = r(1, 1);
+			int floors = r(1,3) * r(1,3) * r(1,3);
 			bu.height = floors * 3.50f;
 		}
 		return &b;
