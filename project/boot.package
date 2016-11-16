@@ -1,26 +1,28 @@
-
-ADD_PACKAGES = [
-	"gwnav/boot.package"
-]
 level = [
 	"empty"
 ]
+
 lua = [
 	"boot"
 ]
+
 material = [
 	"core/performance_hud/gui"
 	"city"
 ]
+
 physics_properties = [
 	"global"
 ]
+
 render_config = [
 	"core/stingray_renderer/renderer"
 ]
+
 shading_environment = [
 	"midday"
 ]
+
 unit = [
 	"core/units/camera"
 	"core/editor_slave/units/skydome/skydome"
