@@ -1,15 +1,17 @@
+string(RANDOM RandomString)
+
+message(STATUS "Random: ${RandomString}")
+
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.dll city_pluginw64_debug.dll.old
+	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.pdb "city_pluginw64_debug.${RandomString}.pdb.old"
 	WORKING_DIRECTORY dlls
-	ERROR_QUIET
 )
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.pdb city_pluginw64_debug.pdb.old
-	WORKING_DIRECTORY dlls
-	ERROR_QUIET
-)
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E remove city_pluginw64_debug.pdb
-	WORKING_DIRECTORY dlls
-	ERROR_QUIET
-)
+
+file(GLOB ToDelete dlls/*.old)
+foreach(ToDeleteFile ${ToDelete})
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E remove ${ToDeleteFile}
+		ERROR_QUIET
+	)
+endforeach(ToDeleteFile)
