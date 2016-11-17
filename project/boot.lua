@@ -63,8 +63,6 @@ camera = {
 }
 
 function init()
-	Application.set_plugin_hot_reload_directory("C:\\Work\\city\\plugin\\build\\dlls")
-
 	self.world = Application.new_world()
 	self.viewport = Application.create_viewport(self.world, "default")
 	self.shading_environment = World.create_shading_environment(self.world, "midday")
