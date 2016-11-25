@@ -1,10 +1,8 @@
-string(RANDOM RandomString)
-
-message(STATUS "Random: ${RandomString}")
+string(TIMESTAMP TimeStamp %y%m%d_%H%M%S)
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.dll city_pluginw64_debug.dll.old
-	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.pdb "city_pluginw64_debug.${RandomString}.pdb.old"
+	COMMAND ${CMAKE_COMMAND} -E rename city_pluginw64_debug.pdb "city_pluginw64_debug.${TimeStamp}.pdb.old"
 	WORKING_DIRECTORY dlls
 )
 
