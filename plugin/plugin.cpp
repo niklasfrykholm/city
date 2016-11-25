@@ -21,6 +21,7 @@ namespace {
 	AllocatorApi *_allocator_api;
 	SceneGraphApi *_scene_graph;
 	UnitApi *_unit;
+	ScriptApi *_script;
 
 	AllocatorObject *_allocator_object;
 	ApiAllocator _allocator = ApiAllocator(nullptr, nullptr);
@@ -269,12 +270,15 @@ namespace {
 		_allocator = ApiAllocator(_allocator_api, _allocator_object);
 
 		_lua = (LuaApi*)get_engine_api(LUA_API_ID);
+
+		_script = (ScriptApi*)get_engine_api(C_API_ID);
 	}
 
 	void setup_game(GetApiFunction get_engine_api)
 	{
 		init_api(get_engine_api);
 
+		_lua->remove_module("City");
 		_lua->add_module_function("City", "make_city", [](lua_State *L)
 		{
 			auto unit = _lua->getunit(L, 1);
@@ -296,9 +300,16 @@ namespace {
 		});
 	}
 
+	void update_game(float dt)
+	{
+		// Uncomment this to test crash recovery behavior.
+		// _script->World->num_units(NULL);
+	}
+
 	void shutdown_game()
 	{
 		destroy_city();
+		_lua->remove_module("City");
 		_allocator_api->destroy_plugin_allocator(_allocator_object);
 	}
 
@@ -359,6 +370,7 @@ extern "C" {
 		static struct PluginApi api = {0};
 		api.setup_game = setup_game;
 		api.shutdown_game = shutdown_game;
+		api.update_game = update_game;
 		api.start_reload = start_reload;
 		api.finish_reload = finish_reload;
 		return &api;
